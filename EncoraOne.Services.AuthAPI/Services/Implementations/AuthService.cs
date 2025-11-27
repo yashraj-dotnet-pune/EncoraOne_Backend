@@ -164,5 +164,21 @@ namespace EncoraOne.Grievance.API.Services.Implementations
                 DepartmentId = deptId
             };
         }
+
+        public object HashPassword(string password)
+        {
+            // Use a new HMACSHA512 to generate a unique, random salt (stored in hmac.Key)
+            using var hmac = new HMACSHA512();
+
+            // Calculate the hash
+            byte[] computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(password));
+
+            // Convert to base64 strings for storage
+            string passwordHash = Convert.ToBase64String(computedHash);
+            string passwordSalt = Convert.ToBase64String(hmac.Key);
+
+            // Combine salt and hash into a single string for storage
+            return $"{passwordSalt}.{passwordHash}";
+        }
     }
 }

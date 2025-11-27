@@ -1,15 +1,16 @@
-using System.Text;
-using System.Text.Json.Serialization;
 using EncoraOne.Grievance.API.Data;
+using EncoraOne.Grievance.API.Hubs; // Import Hub Namespace
 using EncoraOne.Grievance.API.Repositories.Implementations;
 using EncoraOne.Grievance.API.Repositories.Interfaces;
 using EncoraOne.Grievance.API.Services.Implementations;
 using EncoraOne.Grievance.API.Services.Interfaces;
-using EncoraOne.Grievance.API.Hubs; // Import Hub Namespace
+using Grievance.API.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,7 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IComplaintService, ComplaintService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 // 4. CORS (Allow Credentials for SignalR)
 builder.Services.AddCors(options =>

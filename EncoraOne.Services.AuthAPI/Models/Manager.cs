@@ -11,5 +11,6 @@ namespace EncoraOne.Grievance.API.Models
         // Navigation Property
         [ForeignKey("DepartmentId")]
         public Department Department { get; set; }
+        public string JobTitle { get; internal set; }
     }
 }

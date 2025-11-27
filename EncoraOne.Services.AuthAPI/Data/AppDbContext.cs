@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using EncoraOne.Grievance.API.Models;
+using System; // Ensure System is imported for DateTime.UtcNow
 
 namespace EncoraOne.Grievance.API.Data
 {
@@ -15,6 +16,11 @@ namespace EncoraOne.Grievance.API.Data
         public DbSet<Department> Departments { get; set; }
         public DbSet<Complaint> Complaints { get; set; }
 
+        // 🚨 CRITICAL FIX: The base User class MUST be a DbSet<User> 
+        // to enable generic queries (like in AdminService.cs) and to properly
+        // set up the TPT inheritance mapping.
+        public DbSet<User> Users { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -22,12 +28,19 @@ namespace EncoraOne.Grievance.API.Data
             // ============================================
             // 1. Configure Inheritance Strategy (TPT)
             // ============================================
-            // Since User is abstract and we have [Table] attributes on children,
-            // EF Core will create a "Users" table for shared fields, 
-            // and "Employees"/"Managers" tables for specific fields.
+            // These configurations explicitly map the base class and derived classes 
+            // to their respective tables, confirming the TPT strategy.
             modelBuilder.Entity<User>().ToTable("Users");
             modelBuilder.Entity<Employee>().ToTable("Employees");
             modelBuilder.Entity<Manager>().ToTable("Managers");
+
+            // Ensure the primary keys are correctly mapped, especially for TPT
+            // where the PKs are shared (Id in User is the FK in Employee/Manager).
+            modelBuilder.Entity<Employee>()
+                .HasBaseType<User>();
+
+            modelBuilder.Entity<Manager>()
+                .HasBaseType<User>();
 
             // ============================================
             // 2. Configure Relationships
@@ -38,7 +51,7 @@ namespace EncoraOne.Grievance.API.Data
                 .HasOne(m => m.Department)
                 .WithMany(d => d.Managers)
                 .HasForeignKey(m => m.DepartmentId)
-                .OnDelete(DeleteBehavior.Restrict); // Prevent deleting Dept if Managers exist
+                .OnDelete(DeleteBehavior.Restrict);
 
             // Department -> Complaints (One-to-Many)
             modelBuilder.Entity<Complaint>()
@@ -66,18 +79,22 @@ namespace EncoraOne.Grievance.API.Data
             );
 
             // Seed Super Admin (As a Manager of Administration)
-            // Password: "Admin@123" (In a real app, hash this!)
+            // NOTE: When seeding TPT data, you typically use the concrete class (Manager) 
+            // but ensure all base class properties (User) are included.
             modelBuilder.Entity<Manager>().HasData(
                 new Manager
                 {
                     Id = 1,
                     FullName = "Super Admin",
                     Email = "admin@encora.com",
-                    PasswordHash = "Admin@123", // We will implement hashing later
-                    Role = UserRole.Admin,
+                    // ⚠️ REMINDER: This should be a SHA-256 or similar hash, not plain text!
+                    PasswordHash = "Admin@123",
+                    Role = UserRole.Admin, // UserRole enum value for Admin
                     DepartmentId = 1, // Administration
                     CreatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    IsActive = true,
+                    // Manager specific property
+                    JobTitle = "Chief Administrator"
                 }
             );
         }
