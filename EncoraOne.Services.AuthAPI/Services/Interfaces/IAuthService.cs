@@ -14,5 +14,6 @@ namespace EncoraOne.Grievance.API.Services.Interfaces
 
         // Helper to check if user exists
         Task<bool> UserExistsAsync(string email);
+        object HashPassword(string password);
     }
 }
