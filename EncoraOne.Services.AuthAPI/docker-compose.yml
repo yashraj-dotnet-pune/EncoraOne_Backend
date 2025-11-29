@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+
+  db:
+    image: mcr.microsoft.com/azure-sql-edge
+    platform: linux/arm64
+    environment:
+      SA_PASSWORD: ${SA_PASSWORD}
+      ACCEPT_EULA: Y
+    ports:
+      - "1433:1433"
+    
+    restart: unless-stopped
+
+  grievance_api:
+    build:
+      context: .
+    ports:
+      - "5001:5001"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Server=db,1433;Database=EncoraOneGrievanceDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;
+      AllowedOrigins: http://localhost:5173
+    depends_on:
+      - db
+      - migrator
+
+  migrator:
+    build:
+      context: ./migrator
+    env_file:
+      - .env
+    environment:
+      ConnectionStrings__DefaultConnection: Server=db,1433;Database=EncoraOneGrievanceDB;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;
+    volumes:
+      - ./.:/app
+      - ./scripts:/scripts
+    working_dir: /app
+    depends_on:
+      - db
+    entrypoint: ["/bin/bash", "/scripts/migrator.sh"]
+    restart: "no"
+
+
